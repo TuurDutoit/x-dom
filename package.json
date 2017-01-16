@@ -1,6 +1,6 @@
 {
-  "name": "x-dom",
-  "version": "0.0.1",
+  "name": "xdom",
+  "version": "0.0.2",
   "description": "A light, modern, pick-and-choose DOM library",
   "main": "dist/x.es5.js",
   "jsnext:main": "dist/x.es6.js",
