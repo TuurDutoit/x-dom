@@ -1,0 +1,16 @@
+{
+    "env": {
+        "browser": true,
+        "es6": true
+    },
+    "extends": "jquery",
+    "parserOptions": {
+        "sourceType": "module"
+    },
+    "rules": {
+        "newline-after-var": "error",
+        "no-multiple-empty-lines": ["error", { "max":3, "maxBOF":0, "maxEOF":1 }],
+        "lines-around-comment": ["error", { "allowBlockStart": true }],
+        "no-cond-assign": ["error", "except-parens"]
+    }
+}

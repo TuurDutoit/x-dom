@@ -1,0 +1,28 @@
+{
+  "name": "x-dom",
+  "version": "0.0.1",
+  "description": "A light, modern, pick-and-choose DOM library",
+  "main": "dist/x.es5.js",
+  "jsnext:main": "dist/x.es6.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "babel:es5": "rollup -c build/rollup.es5.js -o dist/x.es5.js",
+    "rollup:es6": "rollup -c build/rollup.es6.js -o dist/x.es6.js",
+    "rollup:test": "rollup -c build/rollup.test.js -o test/bundle.import.js",
+    "minify:es5": "uglifyjs -c -m -o dist/x.es5.min.js dist/x.es5.js",
+    "minify:es6": "escompress -o dist/x.es6.min.js dist/x.es6.js",
+    "build:es5": "npm run babel:es5 && npm run minify:es5",
+    "build:es6": "npm run rollup:es6 && npm run minify:es6",
+    "build:test": "npm run rollup:test",
+    "build:dist": "npm run build:es5 && npm run build:es6",
+    "build": "npm run build:dist && npm run build:test"
+  },
+  "author": "Tuur Dutoit <me@tuurdutoit.be>",
+  "license": "MIT",
+  "devDependencies": {
+    "babel-preset-es2015-rollup": "^1.2.0",
+    "eslint": "^3.6.0",
+    "eslint-config-jquery": "^1.0.0",
+    "rollup-plugin-babel": "^2.6.1"
+  }
+}
