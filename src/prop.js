@@ -5,7 +5,9 @@ import * as is from "./util/is";
 
 export function prop( $elems, name, val ) {
 
-  if ( is.defined( val ) ) {
+  if ( is.object( name ) ) {
+    setProps( $elems, name );
+  } else if ( is.defined( val ) ) {
     setProp( $elems, name, val );
   } else {
     return getProp( $elems, name );

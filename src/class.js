@@ -1,4 +1,4 @@
-import { flatten, each, first, map } from "./util/array";
+import { first, each, reduce } from "./util/array";
 import * as is from "./util/is";
 
 var rWhitespace = /\s+/;
@@ -72,8 +72,32 @@ export function toggleClass( $elems, classes, force ) {
 
 
 
-export function hasClass( $elem, klass ) {
-  return first( $elem ).classList.contains( klass );
+export function hasClass( $elems, klass ) {
+  return first( $elems ).classList.contains( klass );
+}
+
+
+
+export function allHaveClass( $elems, klass ) {
+
+  return reduce( $elems, true, function( value, $elem ) {
+    return value && $elem.classList.contains( klass );
+  } );
+
+}
+
+
+
+export function someHaveClass( $elems, klass ) {
+
+  return !!each( $elems, function( $elem ) {
+
+    if ( $elem.classList.contains( klass ) ) {
+      return true;
+    }
+
+  } );
+
 }
 
 
@@ -84,9 +108,11 @@ export function prepare( classes ) {
     return classes.split( rWhitespace );
   }
 
-  classes = map( classes, function( klass ) {
-    return klass.split( rWhitespace );
+  var newClasses = [];
+
+  each( classes, function( klass ) {
+    newClasses.push( ...klass.split( rWhitespace ) );
   } );
 
-  return flatten( classes );
+  return newClasses;
 }

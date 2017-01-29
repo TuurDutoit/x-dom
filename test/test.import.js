@@ -5,7 +5,7 @@ import * as $ from "../src/entry";
 // Family
 var $elem = $.select( ".hello" );
 var parent = $.parent( $elem );
-var ancestors = $.flatten( $.ancestors( $elem ) );
+var ancestors = $.array.flatten( $.ancestors( $elem ) );
 
 
 
@@ -30,7 +30,7 @@ console.log( $.text( $h2 ) );
 
 
 // CSS
-$.styles( $h2, { fontWeight: "bold", fontSize: 25, color: "red" } );
+$.setStyles( $h2, { fontWeight: "bold", fontSize: 25, color: "red" } );
 
 
 

@@ -8,8 +8,7 @@ export * from "./events";
 export * from "./family";
 export * from "./prop";
 export * from "./select";
-export * from "./util/array";
-export * from "./util/object";
 
+import * as array from "./util/array";
 import * as is from "./util/is";
-export { is };
+export { array, is };

@@ -34,26 +34,6 @@ function undef( val ) {
   return val == null;
 }
 
-var stub = [];
-
-
-function flatten( arr, res = [] ) {
-
-  each( arr, function( item ) {
-
-    if ( arrayLike( item ) ) {
-      flatten( item, res );
-    } else {
-      res.push( item );
-    }
-
-  } );
-
-  return res;
-};
-
-
-
 function each( arr, cb ) {
 
   if ( undef( arr ) ) {
@@ -82,27 +62,46 @@ function each( arr, cb ) {
 
 
 
+function flatten( arr ) {
+
+  if ( !arrayLike( arr ) ) {
+    return [ arr ];
+  }
+
+  var res = [];
+
+  for ( var i = 0, len = arr.length; i < len; i++ ) {
+
+    if ( arrayLike( arr[ i ] ) ) {
+      res.push( ...flatten( arr[ i ] ) );
+    } else {
+      res.push( arr[ i ] );
+    }
+
+  }
+
+  return res;
+}
+
+
+
 function first( arr ) {
   return arrayLike( arr ) ? arr[ 0 ] : arr;
 }
 
-
-
-function map( arr, cb, self ) {
-  return stub.map.call( arr, cb, self );
-}
-
-
-
-function unshift( arr, items ) {
-  return stub.unshift.apply( arr, items );
-}
-
 function setAttr( $elems, name, val ) {
 
-    each( $elems, function( $elem ) {
-      $elem.setAttribute( name, val );
-    } );
+  if ( !val ) {
+    return removeAttr( $elems, name );
+  }
+
+  if ( val === true ) {
+    val = name;
+  }
+
+  each( $elems, function( $elem ) {
+    $elem.setAttribute( name, val );
+  } );
 
 }
 
@@ -122,19 +121,39 @@ function getAttr( $elems, name ) {
   return first( $elems ).getAttribute( name );
 }
 
+
+
+function removeAttr( $elems, name ) {
+
+  each( $elems, function( $elem ) {
+    $elem.removeAttribute( name );
+  } );
+
+}
+
 function text( $elems, text ) {
 
   if ( string( text ) ) {
-
-    each( $elems, function( $elem ) {
-      $elem.textContent = text;
-    } );
-
+    setText( $elems, text );
   } else {
-
-    return first( $elems ).textContent;
-
+    return getText( $elems );
   }
+
+}
+
+
+
+function getText( $elems ) {
+  return first( $elems ).textContent;
+}
+
+
+
+function setText( $elems, text ) {
+
+  each( $elems, function( $elem ) {
+    $elem.textContent = text;
+  } );
 
 }
 
@@ -142,15 +161,13 @@ var $container = document.createElement( "div" );
 
 
 
-function create( tag, attrs, $children = [] ) {
+function create( tag, attrs, $children ) {
   var $elem = document.createElement( tag );
 
   if ( plainObject( attrs ) ) {
     setAttrs( $elem, attrs );
-  } else if ( arrayLike( attrs ) ) {
-    unshift( $children, attrs );
-  } else if ( defined( attrs ) ) {
-    $children.unshift( attrs );
+  } else {
+    $children = attrs;
   }
 
   each( $children, function( $child ) {
@@ -222,15 +239,10 @@ function parent$1( $elems, sel ) {
   if ( string( sel ) ) {
 
     return each( $elems, function( $elem ) {
-      var $parents = parents( $elem );
 
-      return each( $parents, function( $parent ) {
-
-        if ( matches( $parent, sel ) ) {
-          return $parent;
-        }
-
-      } );
+      if ( matches( $elem.parentElement, sel ) ) {
+        return $elem;
+      }
 
     } );
 
@@ -240,23 +252,6 @@ function parent$1( $elems, sel ) {
 
   }
 
-}
-
-
-
-function parents( $elems, sel ) {
-  var parents = [];
-
-  each( $elems, function( $elem ) {
-    var $parent = $elem.parentElement;
-
-    if ( !sel || matches( $parent, sel ) ) {
-      parents.push( $parent );
-    }
-
-  } );
-
-  return parents;
 }
 
 
@@ -316,11 +311,13 @@ function prepare( classes ) {
     return classes.split( rWhitespace );
   }
 
-  classes = map( classes, function( klass ) {
-    return klass.split( rWhitespace );
+  var newClasses = [];
+
+  each( classes, function( klass ) {
+    newClasses.push( ...klass.split( rWhitespace ) );
   } );
 
-  return flatten( classes );
+  return newClasses;
 }
 
 function cssNameToJs( name ) {
@@ -333,7 +330,7 @@ function cssNameToJs( name ) {
 
 
 
-function style( $elems, prop, val ) {
+function setStyle( $elems, prop, val ) {
   prop = cssNameToJs( prop );
 
   if ( number( val ) ) {
@@ -348,10 +345,10 @@ function style( $elems, prop, val ) {
 
 
 
-function styles( $elems, styles ) {
+function setStyles( $elems, styles ) {
 
   for ( var prop in styles ) {
-    style( $elems, prop, styles[ prop ] );
+    setStyle( $elems, prop, styles[ prop ] );
   }
 
 }
@@ -424,7 +421,7 @@ console.log( text( $h2 ) );
 
 
 // CSS
-styles( $h2, { fontWeight: "bold", fontSize: 25, color: "red" } );
+setStyles( $h2, { fontWeight: "bold", fontSize: 25, color: "red" } );
 
 
 

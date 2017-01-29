@@ -1,4 +1,4 @@
-import { each } from "./util/array";
+import { each, first } from "./util/array";
 import * as is from "./util/is";
 
 
@@ -24,6 +24,24 @@ export function jsNameToCss( name ) {
 
 
 export function style( $elems, prop, val ) {
+
+  if ( is.defined( val ) ) {
+    setStyle( $elems, prop, val );
+  } else {
+    return getStyle( $elems, prop );
+  }
+
+}
+
+
+
+export function getStyle( $elems, prop ) {
+  return first( $elems ).style[ prop ];
+}
+
+
+
+export function setStyle( $elems, prop, val ) {
   prop = cssNameToJs( prop );
 
   if ( is.number( val ) ) {
@@ -38,10 +56,10 @@ export function style( $elems, prop, val ) {
 
 
 
-export function styles( $elems, styles ) {
+export function setStyles( $elems, styles ) {
 
   for ( var prop in styles ) {
-    style( $elems, prop, styles[ prop ] );
+    setStyle( $elems, prop, styles[ prop ] );
   }
 
 }
@@ -49,5 +67,5 @@ export function styles( $elems, styles ) {
 
 
 export function css( $elems, prop, val ) {
-  return is.string( prop ) ? style( $elems, prop, val ) : styles( $elems, prop );
+  return is.string( prop ) ? style( $elems, prop, val ) : setStyles( $elems, prop );
 }

@@ -25,9 +25,17 @@ export function attr( $elems, name, val ) {
 
 export function setAttr( $elems, name, val ) {
 
-    each( $elems, function( $elem ) {
-      $elem.setAttribute( name, val );
-    } );
+  if ( !val ) {
+    return removeAttr( $elems, name );
+  }
+
+  if ( val === true ) {
+    val = name;
+  }
+
+  each( $elems, function( $elem ) {
+    $elem.setAttribute( name, val );
+  } );
 
 }
 

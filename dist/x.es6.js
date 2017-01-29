@@ -36,7 +36,7 @@
     return ( val instanceof Date );
   }
 
-  function array( val ) {
+  function array$1( val ) {
     return Array.isArray( val );
   }
 
@@ -66,7 +66,7 @@
     element: element,
     document: document$1,
     date: date,
-    array: array,
+    array: array$1,
     arrayLike: arrayLike,
     plainObject: plainObject,
     defined: defined,
@@ -74,22 +74,6 @@
   });
 
   var stub = [];
-
-
-  function flatten( arr, res = [] ) {
-
-    each( arr, function( item ) {
-
-      if ( arrayLike( item ) ) {
-        flatten( item, res );
-      } else {
-        res.push( item );
-      }
-
-    } );
-
-    return res;
-  };
 
 
 
@@ -121,6 +105,42 @@
 
 
 
+  function reduce( arr, value, cb ) {
+
+    each( arr, function( item, index ) {
+
+      value = cb( value, item, index, arr );
+
+    } );
+
+    return value;
+  }
+
+
+
+  function flatten( arr ) {
+
+    if ( !arrayLike( arr ) ) {
+      return [ arr ];
+    }
+
+    var res = [];
+
+    for ( var i = 0, len = arr.length; i < len; i++ ) {
+
+      if ( arrayLike( arr[ i ] ) ) {
+        res.push( ...flatten( arr[ i ] ) );
+      } else {
+        res.push( arr[ i ] );
+      }
+
+    }
+
+    return res;
+  }
+
+
+
   function first( arr ) {
     return arrayLike( arr ) ? arr[ 0 ] : arr;
   }
@@ -129,12 +149,6 @@
 
   function last( arr ) {
     return arrayLike( arr ) ? arr[ arr.length - 1 ] : arr;
-  }
-
-
-
-  function map( arr, cb, self ) {
-    return stub.map.call( arr, cb, self );
   }
 
 
@@ -150,10 +164,15 @@
   }
 
 
-
-  function unshift( arr, items ) {
-    return stub.unshift.apply( arr, items );
-  }
+  var array = Object.freeze({
+    each: each,
+    reduce: reduce,
+    flatten: flatten,
+    first: first,
+    last: last,
+    slice: slice,
+    indexOf: indexOf
+  });
 
   function attr( $elems, name, val ) {
 
@@ -177,9 +196,17 @@
 
   function setAttr( $elems, name, val ) {
 
-      each( $elems, function( $elem ) {
-        $elem.setAttribute( name, val );
-      } );
+    if ( !val ) {
+      return removeAttr( $elems, name );
+    }
+
+    if ( val === true ) {
+      val = name;
+    }
+
+    each( $elems, function( $elem ) {
+      $elem.setAttribute( name, val );
+    } );
 
   }
 
@@ -234,16 +261,26 @@
   function html( $elems, html ) {
 
     if ( string( html ) ) {
-
-      each( $elems, function( $elem ) {
-        $elem.innerHTML = html;
-      } );
-
+      setHTML( $elems, html );
     } else {
-
-      return first( $elems ).innerHTML;
-
+      return getHTML( $elems );
     }
+
+  }
+
+
+
+  function getHTML( $elems ) {
+    return first( $elems ).innerHTML;
+  }
+
+
+
+  function setHTML( $elems, html ) {
+
+    each( $elems, function( $elem ) {
+      $elem.innerHTML = html;
+    } );
 
   }
 
@@ -252,16 +289,26 @@
   function text( $elems, text ) {
 
     if ( string( text ) ) {
-
-      each( $elems, function( $elem ) {
-        $elem.textContent = text;
-      } );
-
+      setText( $elems, text );
     } else {
-
-      return first( $elems ).textContent;
-
+      return getText( $elems );
     }
+
+  }
+
+
+
+  function getText( $elems ) {
+    return first( $elems ).textContent;
+  }
+
+
+
+  function setText( $elems, text ) {
+
+    each( $elems, function( $elem ) {
+      $elem.textContent = text;
+    } );
 
   }
 
@@ -269,15 +316,13 @@
 
 
 
-  function create( tag, attrs, $children = [] ) {
+  function create( tag, attrs, $children ) {
     var $elem = document.createElement( tag );
 
     if ( plainObject( attrs ) ) {
       setAttrs( $elem, attrs );
-    } else if ( arrayLike( attrs ) ) {
-      unshift( $children, attrs );
-    } else if ( defined( attrs ) ) {
-      $children.unshift( attrs );
+    } else {
+      $children = attrs;
     }
 
     each( $children, function( $child ) {
@@ -400,12 +445,12 @@
 
 
 
-  function children( $elems ) {
+  function children( $elems, sel ) {
 
     // Optimize case where $elems is just one element
     // Also convert to an Array, as a HTMLCollection is live
     // and could cause unexpected behaviour when expecting an Array
-    if ( node( $elems ) ) {
+    if ( node( $elems ) && !sel ) {
 
       return Array.from( $elems.children );
 
@@ -413,7 +458,15 @@
       var $children = [];
 
       each( $elems, function( $elem ) {
-        $children.push( $elem.children );
+
+        each( $elem.children, function( $child ) {
+
+          if ( !sel || matches( $child, sel ) ) {
+            $children.push( $child );
+          }
+
+        } );
+
       } );
 
       return $children;
@@ -423,12 +476,49 @@
 
 
 
-  function descendants( $elems, all, $descendants = [] ) {
+  function isChild( $elems, $child ) {
+    return $child.parentElement === first( $elems );
+  }
+
+
+
+  function isChildOfAll( $elems, $child ) {
+    $child = first( $child );
+
+    return reduce( $elems, true, function( res, $elem ) {
+      return res && isChild( $elem, $child );
+    } );
+
+  }
+
+
+
+  function isChildOfSome( $elems, $child ) {
+    $child = first( $child );
+
+    return !!each( $elems, function( $elem ) {
+
+      if ( isChild( $elem, $child ) ) {
+        return true;
+      }
+
+    } );
+
+  }
+
+
+
+  function descendants( $elems, sel, all, $descendants = [] ) {
+
+    if ( bool( sel ) ) {
+      all = sel;
+      sel = null;
+    }
 
     each( $elems, function( $elem ) {
       var hasChildren = $elem.children.length;
 
-      if ( all || !hasChildren ) {
+      if ( ( all || !hasChildren ) && ( !sel || matches( $elem, sel ) ) ) {
         $descendants.push( $elem );
       }
 
@@ -443,20 +533,47 @@
 
 
 
+  function isDescendant( $elems, $descendant ) {
+    return isAncestor( $descendant, first( $elems ) );
+  }
+
+
+
+  function isDescendantOfAll( $elems, $descendant ) {
+    $descendant = first( $descendant );
+
+    return reduce( $elems, true, function( res, $elem ) {
+      return res && isDescendant( $elem, $descendant );
+    } );
+
+  }
+
+
+
+  function isDescendantOfSome( $elems, $descendant ) {
+    $descendant = first( $descendant );
+
+    return !!each( $elems, function( $elem ) {
+
+      if ( isDescendant( $elem, $descendant ) ) {
+        return true;
+      }
+
+    } );
+
+  }
+
+
+
   function parent( $elems, sel ) {
 
     if ( string( sel ) ) {
 
       return each( $elems, function( $elem ) {
-        var $parents = parents( $elem );
 
-        return each( $parents, function( $parent ) {
-
-          if ( matches( $parent, sel ) ) {
-            return $parent;
-          }
-
-        } );
+        if ( matches( $elem.parentElement, sel ) ) {
+          return $elem;
+        }
 
       } );
 
@@ -487,6 +604,38 @@
 
 
 
+  function isParent( $elems, $parent ) {
+    return first( $elems ).parentElement === first( $parent );
+  }
+
+
+
+  function isParentOfAll( $elems, $parent ) {
+    $parent = first( $parent );
+
+    return reduce( $elems, true, function( res, $elem ) {
+      return res && isParent( $elem, $parent );
+    } );
+
+  }
+
+
+
+  function isParentOfSome( $elems, $parent ) {
+    $parent = first( $parent );
+
+    return !!each( $elems, function( $elem ) {
+
+      if ( isParent( $elem, $parent ) ) {
+        return true;
+      }
+
+    } );
+
+  }
+
+
+
   function ancestors( $elems, sel ) {
     var ancestors = [];
 
@@ -510,17 +659,42 @@
 
 
 
-  function isAncestor( $ancestor, $descendants ) {
+  function isAncestor( $ancestor, $descendant ) {
+    var $elem = first( $descendant );
+    var $ancestor = first( $ancestor );
 
-    return each( $descendants, function( $elem ) {
+    while ( $elem ) {
+      $elem = $elem.parentElement;
 
-      while ( $elem ) {
-        $elem = $elem.parentElement;
+      if ( $elem === $ancestor ) {
+        return true;
+      }
 
-        if ( $elem === $ancestor ) {
-          return true;
-        }
+    }
 
+    return false;
+  }
+
+
+
+  function isAncestorOfAll( $ancestor, $descendants ) {
+    $ancestor = first( $ancestor );
+
+    return reduce( $descendants, true, function( res, $descendant ) {
+      return res && isAncestor( $ancestor, $descendant );
+    } );
+
+  }
+
+
+
+  function isAncestorOfSome( $ancestor, $descendants ) {
+    $ancestor = first( $ancestor );
+
+    return !!each( $descendants, function( $descendant ) {
+
+      if ( isAncestor( $ancestor, $descendant ) ) {
+        return true;
       }
 
     } );
@@ -541,40 +715,54 @@
 
 
 
-  function siblings( $elem ) {
-    return previousSiblings( $elem ).concat( nextSiblings( $elem ) );
+  function siblings( $elems, sel ) {
+    return prevSiblings( $elems, sel ).concat( nextSiblings( $elems, sel ) );
   }
 
 
 
-  function previousSiblings( $elem ) {
+  function prevSiblings( $elems, sel ) {
     var $siblings = [];
-    var $elem = first( $elem );
 
-    while ( $elem ) {
-      var $sibling =  $elem.previousElementSibling;
+    each( $elems, function( $elem ) {
+      var $sibling = prev( $elem );
 
-      $siblings.push( $sibling );
-      $elem = $sibling;
+      while ( $sibling ) {
 
-    }
+        if ( !sel || matches( $sibling, sel ) ) {
+          $siblings.push( $sibling );
+        }
+
+        $elem = $sibling;
+        $sibling = prev( $elem );
+
+      }
+
+    } );
 
     return $siblings;
   }
 
 
 
-  function nextSiblings( $elem ) {
+  function nextSiblings( $elems, sel ) {
     var $siblings = [];
-    var $elem = first( $elem );
 
-    while ( $elem ) {
-      var $sibling = $elem.nextElementSibling;
+    each( $elems, function( $elem ) {
+      var $sibling = next( $elem );
 
-      $siblings.push( $sibling );
-      $elem = $sibling;
+      while ( $sibling ) {
 
-    }
+        if ( !sel || matches( $sibling, sel ) ) {
+          $siblings.push( $sibling );
+        }
+
+        $elem = $sibling;
+        $sibling = next( $elem );
+
+      }
+
+    } );
 
     return $siblings;
   }
@@ -741,8 +929,32 @@
 
 
 
-  function hasClass( $elem, klass ) {
-    return first( $elem ).classList.contains( klass );
+  function hasClass( $elems, klass ) {
+    return first( $elems ).classList.contains( klass );
+  }
+
+
+
+  function allHaveClass( $elems, klass ) {
+
+    return reduce( $elems, true, function( value, $elem ) {
+      return value && $elem.classList.contains( klass );
+    } );
+
+  }
+
+
+
+  function someHaveClass( $elems, klass ) {
+
+    return !!each( $elems, function( $elem ) {
+
+      if ( $elem.classList.contains( klass ) ) {
+        return true;
+      }
+
+    } );
+
   }
 
 
@@ -753,11 +965,13 @@
       return classes.split( rWhitespace );
     }
 
-    classes = map( classes, function( klass ) {
-      return klass.split( rWhitespace );
+    var newClasses = [];
+
+    each( classes, function( klass ) {
+      newClasses.push( ...klass.split( rWhitespace ) );
     } );
 
-    return flatten( classes );
+    return newClasses;
   }
 
   function cssNameToJs( name ) {
@@ -781,6 +995,24 @@
 
 
   function style( $elems, prop, val ) {
+
+    if ( defined( val ) ) {
+      setStyle( $elems, prop, val );
+    } else {
+      return getStyle( $elems, prop );
+    }
+
+  }
+
+
+
+  function getStyle( $elems, prop ) {
+    return first( $elems ).style[ prop ];
+  }
+
+
+
+  function setStyle( $elems, prop, val ) {
     prop = cssNameToJs( prop );
 
     if ( number( val ) ) {
@@ -795,10 +1027,10 @@
 
 
 
-  function styles( $elems, styles ) {
+  function setStyles( $elems, styles ) {
 
     for ( var prop in styles ) {
-      style( $elems, prop, styles[ prop ] );
+      setStyle( $elems, prop, styles[ prop ] );
     }
 
   }
@@ -806,7 +1038,7 @@
 
 
   function css( $elems, prop, val ) {
-    return string( prop ) ? style( $elems, prop, val ) : styles( $elems, prop );
+    return string( prop ) ? style( $elems, prop, val ) : setStyles( $elems, prop );
   }
 
   function on( $elems, event, cb, opts = false ) {
@@ -847,7 +1079,9 @@
 
   function prop( $elems, name, val ) {
 
-    if ( defined( val ) ) {
+    if ( object( name ) ) {
+      setProps( $elems, name );
+    } else if ( defined( val ) ) {
       setProp( $elems, name, val );
     } else {
       return getProp( $elems, name );
@@ -909,41 +1143,7 @@
 
   }
 
-  function merge( base, ...objs ) {
-    var val;
-
-    each( objs, function( obj ) {
-
-      for ( var key in obj ) {
-        val = obj[ key ];
-
-        if ( object( val ) ) {
-
-          if ( defined( base[ key ] ) ) {
-            merge( base[ key ], val );
-          } else {
-            base[ key ] = clone( val );
-          }
-
-        } else {
-
-          base[ key ] = val;
-
-        }
-
-      }
-
-    } );
-
-    return base;
-  }
-
-
-
-  function clone( obj ) {
-    return merge( ( new ( obj.constructor ) ), obj );
-  }
-
+  exports.array = array;
   exports.is = is;
   exports.attr = attr;
   exports.setAttr = setAttr;
@@ -964,15 +1164,23 @@
   exports.removeClass = removeClass;
   exports.toggleClass = toggleClass;
   exports.hasClass = hasClass;
+  exports.allHaveClass = allHaveClass;
+  exports.someHaveClass = someHaveClass;
   exports.prepare = prepare;
   exports.html = html;
+  exports.getHTML = getHTML;
+  exports.setHTML = setHTML;
   exports.text = text;
+  exports.getText = getText;
+  exports.setText = setText;
   exports.create = create;
   exports.createHTML = createHTML;
   exports.cssNameToJs = cssNameToJs;
   exports.jsNameToCss = jsNameToCss;
   exports.style = style;
-  exports.styles = styles;
+  exports.getStyle = getStyle;
+  exports.setStyle = setStyle;
+  exports.setStyles = setStyles;
   exports.css = css;
   exports.on = on;
   exports.off = off;
@@ -982,15 +1190,26 @@
   exports.childAt = childAt;
   exports.childrenAt = childrenAt;
   exports.children = children;
+  exports.isChild = isChild;
+  exports.isChildOfAll = isChildOfAll;
+  exports.isChildOfSome = isChildOfSome;
   exports.descendants = descendants;
+  exports.isDescendant = isDescendant;
+  exports.isDescendantOfAll = isDescendantOfAll;
+  exports.isDescendantOfSome = isDescendantOfSome;
   exports.parent = parent;
   exports.parents = parents;
+  exports.isParent = isParent;
+  exports.isParentOfAll = isParentOfAll;
+  exports.isParentOfSome = isParentOfSome;
   exports.ancestors = ancestors;
   exports.isAncestor = isAncestor;
+  exports.isAncestorOfAll = isAncestorOfAll;
+  exports.isAncestorOfSome = isAncestorOfSome;
   exports.next = next;
   exports.prev = prev;
   exports.siblings = siblings;
-  exports.previousSiblings = previousSiblings;
+  exports.prevSiblings = prevSiblings;
   exports.nextSiblings = nextSiblings;
   exports.index = index;
   exports.prop = prop;
@@ -1006,16 +1225,6 @@
   exports.matchAll = matchAll;
   exports.matchesPolyfill = matchesPolyfill;
   exports._matches = _matches;
-  exports.flatten = flatten;
-  exports.each = each;
-  exports.first = first;
-  exports.last = last;
-  exports.map = map;
-  exports.slice = slice;
-  exports.indexOf = indexOf;
-  exports.unshift = unshift;
-  exports.merge = merge;
-  exports.clone = clone;
 
   Object.defineProperty(exports, '__esModule', { value: true });
 

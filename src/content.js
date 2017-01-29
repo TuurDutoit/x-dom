@@ -6,16 +6,26 @@ import * as is from "./util/is";
 export function html( $elems, html ) {
 
   if ( is.string( html ) ) {
-
-    each( $elems, function( $elem ) {
-      $elem.innerHTML = html;
-    } );
-
+    setHTML( $elems, html );
   } else {
-
-    return first( $elems ).innerHTML;
-
+    return getHTML( $elems );
   }
+
+}
+
+
+
+export function getHTML( $elems ) {
+  return first( $elems ).innerHTML;
+}
+
+
+
+export function setHTML( $elems, html ) {
+
+  each( $elems, function( $elem ) {
+    $elem.innerHTML = html;
+  } );
 
 }
 
@@ -24,15 +34,25 @@ export function html( $elems, html ) {
 export function text( $elems, text ) {
 
   if ( is.string( text ) ) {
-
-    each( $elems, function( $elem ) {
-      $elem.textContent = text;
-    } );
-
+    setText( $elems, text );
   } else {
-
-    return first( $elems ).textContent;
-
+    return getText( $elems );
   }
+
+}
+
+
+
+export function getText( $elems ) {
+  return first( $elems ).textContent;
+}
+
+
+
+export function setText( $elems, text ) {
+
+  each( $elems, function( $elem ) {
+    $elem.textContent = text;
+  } );
 
 }
